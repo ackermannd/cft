@@ -99,7 +99,7 @@ var gitCoCmd = &cobra.Command{
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
 
-			fmt.Println("Fetching remote")
+			fmt.Println("    Fetching remote")
 			cmd = exec.Command("git", "fetch", "--all")
 			cmd.Dir = folder
 			cmd.Stderr = &stderr
@@ -108,7 +108,7 @@ var gitCoCmd = &cobra.Command{
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
 
-			fmt.Println("Checking out branch origin/" + branch)
+			fmt.Println("    Checking out branch origin/" + branch)
 			cmd = exec.Command("git", "checkout", "-B", branch, "--track", "origin/"+branch)
 			cmd.Dir = folder
 			cmd.Stderr = &stderr
@@ -116,7 +116,7 @@ var gitCoCmd = &cobra.Command{
 			if err != nil {
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
-			fmt.Println(string(output))
+			fmt.Println("    "+strings.Replace(string(output), "\n", "\n    ", -1))
 		}
 		return nil
 	},
