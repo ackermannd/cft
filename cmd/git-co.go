@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"errors"
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -83,31 +84,37 @@ var gitCoCmd = &cobra.Command{
 			replReg := regexp.MustCompile("(" + whitespace + sv + ":\\s|" + nxtService + ")")
 			service := replReg.ReplaceAllString(found, "")
 
+
 			checkReg := regexp.MustCompile("build:(.*)")
-			folder := strings.TrimSpace(checkReg.ReplaceAllString(service, "$1"))
+			folder := strings.TrimSpace(checkReg.ReplaceAllString(checkReg.FindString(service), "$1"))
+
+			var stderr bytes.Buffer
 
 			fmt.Println("Stashing changes in " + folder)
 			cmd := exec.Command("git", "stash")
 			cmd.Dir = folder
+			cmd.Stderr = &stderr
 			output, err := cmd.Output()
 			if err != nil {
-				return err
+				return errors.New(err.Error() + ": " + stderr.String())
 			}
 
 			fmt.Println("Fetching remote")
 			cmd = exec.Command("git", "fetch", "--all")
 			cmd.Dir = folder
+			cmd.Stderr = &stderr
 			output, err = cmd.Output()
 			if err != nil {
-				return err
+				return errors.New(err.Error() + ": " + stderr.String())
 			}
 
 			fmt.Println("Checking out branch origin/" + branch)
-			cmd = exec.Command("git", "checkout", "-b", branch, "--track", "origin/"+branch)
+			cmd = exec.Command("git", "checkout", "-B", branch, "--track", "origin/"+branch)
 			cmd.Dir = folder
+			cmd.Stderr = &stderr
 			output, err = cmd.Output()
 			if err != nil {
-				return err
+				return errors.New(err.Error() + ": " + stderr.String())
 			}
 			fmt.Println(string(output))
 		}
