@@ -68,7 +68,7 @@ var uCmd = &cobra.Command{
 			fmt.Println("Already newest version installed!")
 			os.Exit(0)
 		}
-		tarname := VERSION + "-version.tar.gz"
+		tarname := nv + "-version.tar.gz"
 		out, err := os.Create("./" + tarname)
 		defer func(fname string) {
 			os.Remove(fname)
@@ -89,7 +89,10 @@ var uCmd = &cobra.Command{
 			return err
 		}
 		defer tarf.Close()
-		gr, _ := gzip.NewReader(tarf)
+		gr, err := gzip.NewReader(tarf)
+		if err != nil {
+			return err
+		}
 		defer gr.Close()
 		tr := tar.NewReader(gr)
 		fmt.Println("Unpacking...")
