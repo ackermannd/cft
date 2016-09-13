@@ -61,7 +61,7 @@ var uCmd = &cobra.Command{
 			return errors.New("Couldn't fetch current version number from server :(")
 		}
 		body, _ := ioutil.ReadAll(resp.Body)
-		nv := string(body)
+		nv := strings.TrimSpace(string(body))
 		resp.Body.Close()
 
 		if nv == VERSION {
