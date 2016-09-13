@@ -1,4 +1,4 @@
-	// Copyright © 2016 Daniel Ackermann <ackermann.d@gmail.com>
+// Copyright © 2016 Daniel Ackermann <ackermann.d@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -59,14 +59,14 @@ var switchCmd = &cobra.Command{
 			svReg := regexp.MustCompilePOSIX(".*" + sv + ":")
 			found := svReg.FindString(origData)
 			whitespace := strings.Split(found, sv+":")[0]
-			
+
 			services := regexp.MustCompilePOSIX("^"+whitespace+"[a-zA-Z-]*:( *|\t*)?").FindAllString(origData, -1)
 
 			nxtService := ""
 			if len(services) > 1 {
 				for key, val := range services {
 					if strings.Contains(val, whitespace+sv+":") {
-						if (key+1 < len(services)) {
+						if key+1 < len(services) {
 							nxtService = services[key+1]
 						}
 						break

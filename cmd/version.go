@@ -18,10 +18,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package cmd
 
-import "github.com/ackermannd/cft/cmd"
+import (
+	"fmt"
 
-func main() {
-	cmd.Execute()
+	"github.com/spf13/cobra"
+)
+
+//VERSION number
+const VERSION string = "0.2"
+
+// gitCoCmd represents the git-co command
+var vCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Prints version",
+	Long:  `Prints version`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println(VERSION)
+	},
+}
+
+func init() {
+	RootCmd.AddCommand(vCmd)
 }
