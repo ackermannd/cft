@@ -28,6 +28,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ackermannd/clifmt"
 	"github.com/aryann/difflib"
 	"github.com/spf13/cobra"
 )
@@ -126,9 +127,15 @@ var switchCmd = &cobra.Command{
 		diff := difflib.Diff(strings.Split(origData, "\n"), strings.Split(replaceData, "\n"))
 		fmt.Println("Changes: ")
 		for _, val := range diff {
-			if val.Delta.String() != " " {
-				fmt.Println(val)
+			switch val.Delta.String() {
+			case " ":
+				continue
+			case "-":
+				clifmt.Settings.Color = clifmt.Red
+			case "+":
+				clifmt.Settings.Color = clifmt.Green
 			}
+			clifmt.Println(val)
 		}
 
 		out := []byte(replaceData)

@@ -21,8 +21,8 @@
 package cmd
 
 import (
-	"errors"
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -30,6 +30,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ackermannd/clifmt"
 	"github.com/spf13/cobra"
 )
 
@@ -58,7 +59,7 @@ var gitCoCmd = &cobra.Command{
 
 		cfd, _ := ioutil.ReadAll(cf)
 		origData := string(cfd)
-
+		clifmt.Settings.Intendation = " "
 		for _, sv := range args {
 			svReg := regexp.MustCompilePOSIX(".*" + sv + ":")
 			found := svReg.FindString(origData)
@@ -84,7 +85,6 @@ var gitCoCmd = &cobra.Command{
 			replReg := regexp.MustCompile("(" + whitespace + sv + ":\\s|" + nxtService + ")")
 			service := replReg.ReplaceAllString(found, "")
 
-
 			checkReg := regexp.MustCompile("build:(.*)")
 			folder := strings.TrimSpace(checkReg.ReplaceAllString(checkReg.FindString(service), "$1"))
 
@@ -99,7 +99,7 @@ var gitCoCmd = &cobra.Command{
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
 
-			fmt.Println("    Fetching remote")
+			clifmt.Println("Fetching remote")
 			cmd = exec.Command("git", "fetch", "--all")
 			cmd.Dir = folder
 			cmd.Stderr = &stderr
@@ -108,7 +108,7 @@ var gitCoCmd = &cobra.Command{
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
 
-			fmt.Println("    Checking out branch origin/" + branch)
+			clifmt.Println("Checking out branch origin/" + branch)
 			cmd = exec.Command("git", "checkout", "-B", branch, "--track", "origin/"+branch)
 			cmd.Dir = folder
 			cmd.Stderr = &stderr
@@ -116,7 +116,7 @@ var gitCoCmd = &cobra.Command{
 			if err != nil {
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
-			fmt.Println("    "+strings.Replace(string(output), "\n", "\n    ", -1))
+			clifmt.Println(strings.Replace(string(output), "\n", "\n    ", -1))
 		}
 		return nil
 	},

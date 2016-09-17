@@ -27,7 +27,7 @@ import (
 )
 
 //VERSION number
-const VERSION string = "0.3"
+const VERSION string = "0.3.1"
 
 // gitCoCmd represents the git-co command
 var vCmd = &cobra.Command{
