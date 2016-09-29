@@ -1,20 +1,20 @@
-## cft tag
+## cft git-co
 
-Changes tags on images in docker-compose files
+Checkout specific branches for the given services
 
 ### Synopsis
 
 
-Changes tags of images a docker-compose file. 
+Takes information from Buildpaths of the given services and checks out the given branch. If local changes are represent, they'll be stashed
 
 ```
-cft tag <image pattern> [<image pattern> <image pattern>...]
+cft git-co <service name> [<service name> <service name> ...]
 ```
 
 ### Options
 
 ```
-  -t, --tag string   set this tag for the image(s), if no tag is set, existing tags will be removed
+  -b, --branch string   the branch which should be checked out from the remote origin
 ```
 
 ### Options inherited from parent commands

@@ -1,14 +1,14 @@
-## cft switch
+## cft update
 
-Switches comments on image and build commands
+updates if a newer version exists
 
 ### Synopsis
 
 
-If for a given service, build commands are commented out, these comments will be removed while image will be commented out and vice versa
+updates if a newer version exists
 
 ```
-cft switch <service name> [<service name> <service name> ...]
+cft update
 ```
 
 ### Options inherited from parent commands
