@@ -94,29 +94,70 @@ var gitCoCmd = &cobra.Command{
 			cmd := exec.Command("git", "stash")
 			cmd.Dir = folder
 			cmd.Stderr = &stderr
-			output, err := cmd.Output()
+			_, err := cmd.Output()
 			if err != nil {
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
 
+			stderr.Reset()
 			clifmt.Println("Fetching remote")
 			cmd = exec.Command("git", "fetch", "--all")
 			cmd.Dir = folder
 			cmd.Stderr = &stderr
-			output, err = cmd.Output()
+			_, err = cmd.Output()
 			if err != nil {
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
 
-			clifmt.Println("Checking out branch origin/" + branch)
-			cmd = exec.Command("git", "checkout", "-B", branch, "--track", "origin/"+branch)
+			stderr.Reset()
+			clifmt.Println("Checking if remote origin exists")
+			cmd = exec.Command("git", "remote", "show", "origin")
 			cmd.Dir = folder
 			cmd.Stderr = &stderr
-			output, err = cmd.Output()
+			_, err = cmd.Output()
+			if err != nil && err.Error() != "exit status 128" {
+				return errors.New(err.Error() + ": " + stderr.String())
+			}
+			if err != nil && err.Error() == "exit status 128" {
+				clifmt.Println("No remote origin available, creating local branch")
+				cmd = exec.Command("git", "checkout", "-B", branch)
+			} else {
+				stderr.Reset()
+				clifmt.Println("Checking if branch exists in remote")
+				cmd = exec.Command("git", "ls-remote", "--heads", "--exit-code", "origin", branch)
+				cmd.Dir = folder
+				cmd.Stderr = &stderr
+				_, err = cmd.Output()
+				if err != nil {
+					if err.Error() != "exit status 2" {
+						return errors.New(err.Error() + ": " + stderr.String())
+					}
+					clifmt.Println("Branch not available on remote, switchting to local branch")
+					cmd = exec.Command("git", "checkout", "-B", branch)
+
+				} else {
+					clifmt.Println("Checking out branch origin/" + branch)
+					cmd = exec.Command("git", "checkout", "-B", branch, "--track", "origin/"+branch)
+				}
+			}
+
+			var stdout bytes.Buffer
+			stderr.Reset()
+			cmd.Dir = folder
+			cmd.Stderr = &stderr
+			cmd.Stdout = &stdout
+
+			err = cmd.Run()
 			if err != nil {
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
-			clifmt.Println(strings.Replace(string(output), "\n", "\n    ", -1))
+			if stdout.String() != "" {
+				clifmt.Println(strings.Replace(stdout.String(), "\n", "\n    ", -1))
+			}
+
+			if stderr.String() != "" {
+				clifmt.Println(strings.Replace(stderr.String(), "\n", "\n    ", -1))
+			}
 		}
 		return nil
 	},
