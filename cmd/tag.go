@@ -21,7 +21,6 @@
 package cmd
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -46,16 +45,8 @@ var tagCmd = &cobra.Command{
 		}
 
 		if tag == "" && len(args) == 0 && force == false {
-			for {
-				fmt.Println("No tag nor image pattern given, really remove all tags from all images? [y/n]")
-				reader := bufio.NewReader(os.Stdin)
-				conf, _ := reader.ReadString('\n')
-				conf = strings.ToLower(strings.TrimSpace(conf))
-				if conf == syes || conf == yes {
-					break
-				} else if conf == sno || conf == no {
-					os.Exit(0)
-				}
+			if !Confirm("No tag nor image pattern given, really remove all tags from all images? [y/n]") {
+				os.Exit(0)
 			}
 		}
 		cf, err := os.Open(composeFile)

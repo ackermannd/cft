@@ -22,7 +22,6 @@ package cmd
 
 import (
 	"archive/tar"
-	"bufio"
 	"compress/gzip"
 	"errors"
 	"fmt"
@@ -43,16 +42,8 @@ var uCmd = &cobra.Command{
 	Long:  `updates if a newer version exists`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if force == false {
-			for {
-				fmt.Println("Really update? [yes/no]")
-				reader := bufio.NewReader(os.Stdin)
-				conf, _ := reader.ReadString('\n')
-				conf = strings.ToLower(strings.TrimSpace(conf))
-				if conf == syes || conf == yes {
-					break
-				} else if conf == sno || conf == no {
-					os.Exit(0)
-				}
+			if !Confirm("Really update? [y/n]") {
+				os.Exit(0)
 			}
 		}
 

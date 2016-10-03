@@ -21,8 +21,10 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -30,11 +32,6 @@ import (
 
 var composeFile string
 var force bool
-
-const yes = "yes"
-const syes = "y"
-const no = "no"
-const sno = "n"
 
 var RootCmd = &cobra.Command{
 	Use:   "cft",
@@ -63,5 +60,20 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
+}
+
+// Confirm will ask the given string as yes/no confirmation on the CLI
+func Confirm(q string) bool {
+	for {
+		fmt.Println(q)
+		reader := bufio.NewReader(os.Stdin)
+		conf, _ := reader.ReadString('\n')
+		conf = strings.ToLower(strings.TrimSpace(conf))
+		if conf == "y" || conf == "yes" {
+			return true
+		} else if conf == "n" || conf == "no" {
+			return false
+		}
 	}
 }

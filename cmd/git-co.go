@@ -21,7 +21,6 @@
 package cmd
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -59,16 +58,8 @@ var gitCoCmd = &cobra.Command{
 
 		if len(args) == 0 {
 			if force == false {
-				for {
-					fmt.Println("No service name given, this will iterate through all services and tries to check out the remote branch if it exists. Continue? [y/n]")
-					reader := bufio.NewReader(os.Stdin)
-					conf, _ := reader.ReadString('\n')
-					conf = strings.ToLower(strings.TrimSpace(conf))
-					if conf == syes || conf == yes {
-						break
-					} else if conf == sno || conf == no {
-						os.Exit(0)
-					}
+				if !Confirm("No service name given, this will iterate through all services and tries to check out the remote branch if it exists. Continue? [y/n]") {
+					os.Exit(0)
 				}
 			}
 			tmpComposeFolder := strings.Split(composeFile, "/")
