@@ -48,9 +48,9 @@ var uCmd = &cobra.Command{
 				reader := bufio.NewReader(os.Stdin)
 				conf, _ := reader.ReadString('\n')
 				conf = strings.ToLower(strings.TrimSpace(conf))
-				if conf == "y" || conf == "yes" {
+				if conf == syes || conf == yes {
 					break
-				} else if conf == "n" || conf == "no" {
+				} else if conf == sno || conf == no {
 					os.Exit(0)
 				}
 			}

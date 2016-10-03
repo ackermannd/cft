@@ -31,6 +31,11 @@ import (
 var composeFile string
 var force bool
 
+const yes = "yes"
+const syes = "y"
+const no = "no"
+const sno = "n"
+
 var RootCmd = &cobra.Command{
 	Use:   "cft",
 	Short: "compose file tool",
