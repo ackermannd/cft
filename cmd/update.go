@@ -42,7 +42,7 @@ var uCmd = &cobra.Command{
 	Long:  `updates if a newer version exists`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if force == false {
-			if !Confirm("Really update? [y/n]") {
+			if !confirm("Really update? [y/n]") {
 				os.Exit(0)
 			}
 		}

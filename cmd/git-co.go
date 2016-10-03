@@ -58,7 +58,7 @@ var gitCoCmd = &cobra.Command{
 
 		if len(args) == 0 {
 			if force == false {
-				if !Confirm("No service name given, this will iterate through all services and tries to check out the remote branch if it exists. Continue? [y/n]") {
+				if !confirm("No service name given, this will iterate through all services and tries to check out the remote branch if it exists. Continue? [y/n]") {
 					os.Exit(0)
 				}
 			}
@@ -74,29 +74,7 @@ var gitCoCmd = &cobra.Command{
 		origData := string(cfd)
 		clifmt.Settings.Intendation = " "
 		for _, sv := range args {
-			svReg := regexp.MustCompilePOSIX(".*" + sv + ":")
-			found := svReg.FindString(origData)
-			whitespace := strings.Split(found, sv+":")[0]
-
-			services := regexp.MustCompilePOSIX("^"+whitespace+"[a-zA-Z-]*:( *|\t*)?").FindAllString(origData, -1)
-
-			nxtService := ""
-			if len(services) > 1 {
-				for key, val := range services {
-					if strings.Contains(val, whitespace+sv+":") {
-						if key+1 < len(services) {
-							nxtService = services[key+1]
-						}
-						break
-					}
-				}
-			}
-
-			allReg := regexp.MustCompile(whitespace + sv + ":\\s([\\w\\s\\W]*)" + nxtService)
-			found = allReg.FindString(origData)
-
-			replReg := regexp.MustCompile("(" + whitespace + sv + ":\\s|" + nxtService + ")")
-			service := replReg.ReplaceAllString(found, "")
+			service := extractService(sv, origData)
 
 			checkReg := regexp.MustCompile("build:(.*)")
 			folder := strings.TrimSpace(checkReg.ReplaceAllString(checkReg.FindString(service), "$1"))
@@ -210,9 +188,7 @@ var gitCoCmd = &cobra.Command{
 				if stderr.String() != "" {
 					clifmt.Println(strings.Replace(stderr.String(), "\n", "\n    ", -1))
 				}
-
 			}
-
 		}
 		return nil
 	},

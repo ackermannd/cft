@@ -24,6 +24,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -33,12 +34,14 @@ import (
 var composeFile string
 var force bool
 
+// RootCmd is the main command that holds all subcommands
 var RootCmd = &cobra.Command{
 	Use:   "cft",
 	Short: "compose file tool",
 	Long:  `Tool for modifying docker-compose files via CLI and some additional neat automations`,
 }
 
+// Execute calls RootCmdExecute and prints errors if some occurs
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -64,7 +67,7 @@ func initConfig() {
 }
 
 // Confirm will ask the given string as yes/no confirmation on the CLI
-func Confirm(q string) bool {
+func confirm(q string) bool {
 	for {
 		fmt.Println(q)
 		reader := bufio.NewReader(os.Stdin)
@@ -76,4 +79,30 @@ func Confirm(q string) bool {
 			return false
 		}
 	}
+}
+
+func extractService(sv, origData string) string {
+	svReg := regexp.MustCompilePOSIX(".*" + sv + ":")
+	found := svReg.FindString(origData)
+	whitespace := strings.Split(found, sv+":")[0]
+
+	services := regexp.MustCompilePOSIX("^"+whitespace+"[a-zA-Z-]*:( *|\t*)?").FindAllString(origData, -1)
+
+	nxtService := ""
+	if len(services) > 1 {
+		for key, val := range services {
+			if strings.Contains(val, whitespace+sv+":") {
+				if key+1 < len(services) {
+					nxtService = services[key+1]
+				}
+				break
+			}
+		}
+	}
+
+	allReg := regexp.MustCompile(whitespace + sv + ":\\s([\\w\\s\\W]*)" + nxtService)
+	found = allReg.FindString(origData)
+
+	replReg := regexp.MustCompile("(" + whitespace + sv + ":\\s|" + nxtService + ")")
+	return replReg.ReplaceAllString(found, "")
 }

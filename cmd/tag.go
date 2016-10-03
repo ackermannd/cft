@@ -45,7 +45,7 @@ var tagCmd = &cobra.Command{
 		}
 
 		if tag == "" && len(args) == 0 && force == false {
-			if !Confirm("No tag nor image pattern given, really remove all tags from all images? [y/n]") {
+			if !confirm("No tag nor image pattern given, really remove all tags from all images? [y/n]") {
 				os.Exit(0)
 			}
 		}
