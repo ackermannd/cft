@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -55,21 +56,21 @@ var gitCoCmd = &cobra.Command{
 			return err
 		}
 		defer cf.Close()
-
 		if len(args) == 0 {
 			if force == false {
 				if !confirm("No service name given, this will iterate through all services and tries to check out the remote branch if it exists. Continue? [y/n]") {
 					os.Exit(0)
 				}
 			}
-			tmpComposeFolder := strings.Split(composeFile, "/")
+			tmpComposeFolder, _ := filepath.Abs(composeFile)
+			tmpComposeFolder = filepath.Dir(tmpComposeFolder)
 			cmd := exec.Command("docker-compose", "config", "--services")
-			cmd.Dir = "/" + strings.Join(tmpComposeFolder[1:len(tmpComposeFolder)-1], "/")
+			cmd.Dir = tmpComposeFolder
 			tmp, _ := cmd.Output()
 			args = strings.Split(string(tmp), "\n")
 			args = args[0 : len(args)-1]
 		}
-
+		fmt.Println(args)
 		cfd, _ := ioutil.ReadAll(cf)
 		origData := string(cfd)
 		clifmt.Settings.Intendation = " "

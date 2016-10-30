@@ -27,6 +27,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ackermannd/clifmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -53,6 +54,14 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	RootCmd.PersistentFlags().StringVarP(&composeFile, "compose-file", "c", os.Getenv("CFT_COMPOSE"), "docker-compose file to change, if none set $CFT_COMPOSE will be used")
 	RootCmd.PersistentFlags().BoolVarP(&force, "force", "f", false, "Skips security confirmation prompts")
+	if composeFile == "" {
+		clifmt.Settings.Color = clifmt.Red
+		clifmt.Println("Neither -c flag nor CFT_COMPOSE ENV given, trying to use docker-compose.yml in current directoy")
+		clifmt.Settings.Color = ""
+		if _, err := os.Stat("./docker-compose.yml"); err == nil {
+			composeFile = "./docker-compose.yml"
+		}
+	}
 }
 
 func initConfig() {
