@@ -39,8 +39,9 @@ var switchCmd = &cobra.Command{
 	Short: "Switches comments on image and build commands",
 	Long:  `If for a given service, build commands are commented out, these comments will be removed while image will be commented out and vice versa`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if composeFile == "" {
-			return errors.New("No docker-compose file set, either set CFT_COMPOSE environment variable or supply via flag")
+		err := checkComposeFile()
+		if err != nil {
+			return err
 		}
 		if len(args) == 0 {
 			return errors.New("No service name given")

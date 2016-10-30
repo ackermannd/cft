@@ -21,7 +21,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -40,8 +39,9 @@ var tagCmd = &cobra.Command{
 	Short: "Changes tags on images in docker-compose files",
 	Long:  `Changes tags of images a docker-compose file. `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if composeFile == "" {
-			return errors.New("No docker-compose file set, either set CFT_COMPOSE environment variable or supply via flag")
+		err := checkComposeFile()
+		if err != nil {
+			return err
 		}
 
 		if tag == "" && len(args) == 0 && force == false {
