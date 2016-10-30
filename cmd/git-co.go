@@ -44,8 +44,9 @@ var gitCoCmd = &cobra.Command{
 	Short: "Checkout specific branches for the given services",
 	Long:  `Takes information from Buildpaths of the given services and checks out the given branch. If local changes are represent, they'll be stashed`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if composeFile == "" {
-			return errors.New("No docker-compose file set, either set CFT_COMPOSE environment variable or supply via flag")
+		err := checkComposeFile()
+		if err != nil {
+			return err
 		}
 		if branch == "" {
 			return errors.New("No branch name given")
