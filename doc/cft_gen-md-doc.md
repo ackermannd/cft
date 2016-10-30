@@ -1,14 +1,20 @@
-## cft switch
+## cft gen-md-doc
 
-Switches comments on image and build commands
+Creats new markdown documentation in the doc folder
 
 ### Synopsis
 
 
-If for a given service, build commands are commented out, these comments will be removed while image will be commented out and vice versa
+Creats new markdown documentation in the doc folder
 
 ```
-cft switch <service name> [<service name> <service name> ...]
+cft gen-md-doc
+```
+
+### Options
+
+```
+  -h, --help   help for gen-md-doc
 ```
 
 ### Options inherited from parent commands

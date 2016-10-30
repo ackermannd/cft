@@ -57,32 +57,11 @@ var switchCmd = &cobra.Command{
 		replaceData := origData
 
 		for _, sv := range args {
-			svReg := regexp.MustCompilePOSIX(".*" + sv + ":")
-			found := svReg.FindString(origData)
-			whitespace := strings.Split(found, sv+":")[0]
 
-			services := regexp.MustCompilePOSIX("^"+whitespace+"[a-zA-Z-]*:( *|\t*)?").FindAllString(origData, -1)
-
-			nxtService := ""
-			if len(services) > 1 {
-				for key, val := range services {
-					if strings.Contains(val, whitespace+sv+":") {
-						if key+1 < len(services) {
-							nxtService = services[key+1]
-						}
-						break
-					}
-				}
-			}
-
-			allReg := regexp.MustCompile(whitespace + sv + ":\\s([\\w\\s\\W]*)" + nxtService)
-			found = allReg.FindString(origData)
-
-			replReg := regexp.MustCompile("(" + whitespace + sv + ":\\s|" + nxtService + ")")
-			toReplace := replReg.ReplaceAllString(found, "")
+			toReplace := extractService(sv, origData)
 
 			checkReg := regexp.MustCompile("#(\\s)*image")
-			found = checkReg.FindString(toReplace)
+			found := checkReg.FindString(toReplace)
 
 			replaced := ""
 			//we need a workaround placeholder because replaceallString
@@ -91,7 +70,7 @@ var switchCmd = &cobra.Command{
 			workaround := " __workaround__unique__blablabla__ "
 			if found == "" {
 				//switch from image to build
-				replReg = regexp.MustCompilePOSIX("^( *|\t*)image:")
+				replReg := regexp.MustCompilePOSIX("^( *|\t*)image:")
 				replaced = replReg.ReplaceAllString(toReplace, "#$1"+workaround+"image:")
 
 				replReg = regexp.MustCompilePOSIX("#( *|\t*)?build:")
@@ -105,7 +84,7 @@ var switchCmd = &cobra.Command{
 
 			} else {
 				// switch to build to image
-				replReg = regexp.MustCompilePOSIX("#( *|\t*)?image:")
+				replReg := regexp.MustCompilePOSIX("#( *|\t*)?image:")
 				replaced = replReg.ReplaceAllString(toReplace, "$1"+workaround+"image:")
 
 				replReg = regexp.MustCompilePOSIX("^( *|\t*)?build:")
@@ -117,7 +96,7 @@ var switchCmd = &cobra.Command{
 				replReg = regexp.MustCompilePOSIX("^( *|\t*)?-( *.*/.*)")
 				replaced = replReg.ReplaceAllString(replaced, "#$1"+workaround+"-$2")
 			}
-			replReg = regexp.MustCompile(workaround)
+			replReg := regexp.MustCompile(workaround)
 			replaced = replReg.ReplaceAllString(replaced, "")
 
 			toWrite := strings.Replace(replaceData, toReplace, replaced, 1)

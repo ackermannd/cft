@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -35,6 +36,7 @@ import (
 )
 
 var branch string
+var remoteOnly bool
 
 // gitCoCmd represents the git-co command
 var gitCoCmd = &cobra.Command{
@@ -45,45 +47,35 @@ var gitCoCmd = &cobra.Command{
 		if composeFile == "" {
 			return errors.New("No docker-compose file set, either set CFT_COMPOSE environment variable or supply via flag")
 		}
-		if len(args) == 0 {
-			return errors.New("No service name given")
-		}
 		if branch == "" {
 			return errors.New("No branch name given")
 		}
+
 		cf, err := os.Open(composeFile)
 		if err != nil {
 			return err
 		}
 		defer cf.Close()
-
+		if len(args) == 0 {
+			if force == false {
+				if !confirm("No service name given, this will iterate through all services and tries to check out the remote branch if it exists. Continue? [y/n]") {
+					os.Exit(0)
+				}
+			}
+			tmpComposeFolder, _ := filepath.Abs(composeFile)
+			tmpComposeFolder = filepath.Dir(tmpComposeFolder)
+			cmd := exec.Command("docker-compose", "config", "--services")
+			cmd.Dir = tmpComposeFolder
+			tmp, _ := cmd.Output()
+			args = strings.Split(string(tmp), "\n")
+			args = args[0 : len(args)-1]
+		}
+		fmt.Println(args)
 		cfd, _ := ioutil.ReadAll(cf)
 		origData := string(cfd)
 		clifmt.Settings.Intendation = " "
 		for _, sv := range args {
-			svReg := regexp.MustCompilePOSIX(".*" + sv + ":")
-			found := svReg.FindString(origData)
-			whitespace := strings.Split(found, sv+":")[0]
-
-			services := regexp.MustCompilePOSIX("^"+whitespace+"[a-zA-Z-]*:( *|\t*)?").FindAllString(origData, -1)
-
-			nxtService := ""
-			if len(services) > 1 {
-				for key, val := range services {
-					if strings.Contains(val, whitespace+sv+":") {
-						if key+1 < len(services) {
-							nxtService = services[key+1]
-						}
-						break
-					}
-				}
-			}
-
-			allReg := regexp.MustCompile(whitespace + sv + ":\\s([\\w\\s\\W]*)" + nxtService)
-			found = allReg.FindString(origData)
-
-			replReg := regexp.MustCompile("(" + whitespace + sv + ":\\s|" + nxtService + ")")
-			service := replReg.ReplaceAllString(found, "")
+			service := extractService(sv, origData)
 
 			checkReg := regexp.MustCompile("build:(.*)")
 			folder := strings.TrimSpace(checkReg.ReplaceAllString(checkReg.FindString(service), "$1"))
@@ -94,29 +86,110 @@ var gitCoCmd = &cobra.Command{
 			cmd := exec.Command("git", "stash")
 			cmd.Dir = folder
 			cmd.Stderr = &stderr
-			output, err := cmd.Output()
+			_, err := cmd.Output()
 			if err != nil {
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
 
+			stderr.Reset()
+			clifmt.Println("Checking if remote origin exists")
+			cmd = exec.Command("git", "remote", "show", "origin")
+			cmd.Dir = folder
+			cmd.Stderr = &stderr
+			_, err = cmd.Output()
+			if err != nil && err.Error() != "exit status 128" {
+				return errors.New(err.Error() + ": " + stderr.String())
+			}
+			if err != nil && err.Error() == "exit status 128" {
+				if remoteOnly {
+					clifmt.Println("No remote origin available")
+					continue
+				}
+				clifmt.Println("No remote origin available, creating local branch")
+				cmd = exec.Command("git", "checkout", "-B", branch)
+				var stdout bytes.Buffer
+				stderr.Reset()
+				cmd.Dir = folder
+				cmd.Stderr = &stderr
+				cmd.Stdout = &stdout
+
+				err = cmd.Run()
+				if err != nil {
+					return errors.New(err.Error() + ": " + stderr.String())
+				}
+				if stdout.String() != "" {
+					clifmt.Println(strings.Replace(stdout.String(), "\n", "\n    ", -1))
+				}
+
+				if stderr.String() != "" {
+					clifmt.Println(strings.Replace(stderr.String(), "\n", "\n    ", -1))
+				}
+				continue
+			}
+
+			stderr.Reset()
 			clifmt.Println("Fetching remote")
 			cmd = exec.Command("git", "fetch", "--all")
 			cmd.Dir = folder
 			cmd.Stderr = &stderr
-			output, err = cmd.Output()
+			_, err = cmd.Output()
 			if err != nil {
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
-
-			clifmt.Println("Checking out branch origin/" + branch)
-			cmd = exec.Command("git", "checkout", "-B", branch, "--track", "origin/"+branch)
+			stderr.Reset()
+			clifmt.Println("Checking if branch exists in remote")
+			cmd = exec.Command("git", "ls-remote", "--heads", "--exit-code", "origin", branch)
 			cmd.Dir = folder
 			cmd.Stderr = &stderr
-			output, err = cmd.Output()
+			_, err = cmd.Output()
+			if err != nil {
+				if err.Error() != "exit status 2" {
+					return errors.New(err.Error() + ": " + stderr.String())
+				}
+				if remoteOnly {
+					clifmt.Println("Branch not available on remote")
+					continue
+				}
+				clifmt.Println("Branch not available on remote, switchting to local branch")
+				cmd = exec.Command("git", "checkout", "-B", branch, "develop")
+				var stdout bytes.Buffer
+				stderr.Reset()
+				cmd.Dir = folder
+				cmd.Stderr = &stderr
+				cmd.Stdout = &stdout
+
+				err = cmd.Run()
+				if err != nil {
+					return errors.New(err.Error() + ": " + stderr.String())
+				}
+				if stdout.String() != "" {
+					clifmt.Println(strings.Replace(stdout.String(), "\n", "\n    ", -1))
+				}
+
+				if stderr.String() != "" {
+					clifmt.Println(strings.Replace(stderr.String(), "\n", "\n    ", -1))
+				}
+				continue
+			}
+			clifmt.Println("Checking out branch origin/" + branch)
+			cmd = exec.Command("git", "checkout", "-B", branch, "--track", "origin/"+branch)
+			var stdout bytes.Buffer
+			stderr.Reset()
+			cmd.Dir = folder
+			cmd.Stderr = &stderr
+			cmd.Stdout = &stdout
+
+			err = cmd.Run()
 			if err != nil {
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
-			clifmt.Println(strings.Replace(string(output), "\n", "\n    ", -1))
+			if stdout.String() != "" {
+				clifmt.Println(strings.Replace(stdout.String(), "\n", "\n    ", -1))
+			}
+
+			if stderr.String() != "" {
+				clifmt.Println(strings.Replace(stderr.String(), "\n", "\n    ", -1))
+			}
 		}
 		return nil
 	},
@@ -125,4 +198,5 @@ var gitCoCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(gitCoCmd)
 	gitCoCmd.Flags().StringVarP(&branch, "branch", "b", "", "the branch which should be checked out from the remote origin")
+	gitCoCmd.Flags().BoolVarP(&remoteOnly, "remoteOnly", "r", false, "when no service names are given, only check out given branch if it exists in remote origin ")
 }

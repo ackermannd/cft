@@ -21,24 +21,20 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 )
 
-//VERSION number
-const VERSION string = "0.3.2"
-
-// gitCoCmd represents the git-co command
-var vCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Prints version",
-	Long:  `Prints version`,
+//  dCmd represents the gen-md-doc command
+var docCmd = &cobra.Command{
+	Use:   "gen-md-doc",
+	Short: "Creats new markdown documentation in the doc folder",
+	Long:  `Creats new markdown documentation in the doc folder`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(VERSION)
+		doc.GenMarkdownTree(RootCmd, "./doc/")
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(vCmd)
+	RootCmd.AddCommand(docCmd)
 }

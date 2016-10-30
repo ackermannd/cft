@@ -9,8 +9,12 @@ Usage:
   cft [command]
 
 Available Commands:
+  gen-md-doc  Creats new markdown documentation in the doc folder
+  git-co      Checkout specific branches for the given services
   switch      Switches comments on image and build commands
   tag         Changes tags on images in docker-compose files
+  update      updates if a newer version exists
+  version     Prints version
 
 Flags:
   -c, --compose-file string   docker-compose file to change, if none set $CFT_COMPOSE will be used
@@ -97,6 +101,9 @@ services:
 
 
 ### SEE ALSO in the docs
-* [cft](doc/cft.md) - compose file tool
-* [cft tag](doc/cft_tag.md)	 - Changes tags on images in docker-compose files
+* [cft gen-md-doc](doc/cft_gen-md-doc.md)	- Creats new markdown documentation in the doc folder
+* [cft git-co](doc/cft_git-co.md)	 - Checkout specific branches for the given services
 * [cft switch](doc/cft_switch.md)	 - Switches comments on image and build commands
+* [cft tag](doc/cft_tag.md)	 - Changes tags on images in docker-compose files
+* [cft update](doc/cft_update.md)	 - updates if a newer version exists
+* [cft version](doc/cft_version.md)	 - Prints version

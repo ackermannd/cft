@@ -21,9 +21,13 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 
+	"github.com/ackermannd/clifmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -31,12 +35,14 @@ import (
 var composeFile string
 var force bool
 
+// RootCmd is the main command that holds all subcommands
 var RootCmd = &cobra.Command{
 	Use:   "cft",
 	Short: "compose file tool",
 	Long:  `Tool for modifying docker-compose files via CLI and some additional neat automations`,
 }
 
+// Execute calls RootCmdExecute and prints errors if some occurs
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -48,6 +54,14 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	RootCmd.PersistentFlags().StringVarP(&composeFile, "compose-file", "c", os.Getenv("CFT_COMPOSE"), "docker-compose file to change, if none set $CFT_COMPOSE will be used")
 	RootCmd.PersistentFlags().BoolVarP(&force, "force", "f", false, "Skips security confirmation prompts")
+	if composeFile == "" {
+		clifmt.Settings.Color = clifmt.Red
+		clifmt.Println("Neither -c flag nor CFT_COMPOSE ENV given, trying to use docker-compose.yml in current directoy")
+		clifmt.Settings.Color = ""
+		if _, err := os.Stat("./docker-compose.yml"); err == nil {
+			composeFile = "./docker-compose.yml"
+		}
+	}
 }
 
 func initConfig() {
@@ -59,4 +73,45 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+}
+
+// Confirm will ask the given string as yes/no confirmation on the CLI
+func confirm(q string) bool {
+	for {
+		fmt.Println(q)
+		reader := bufio.NewReader(os.Stdin)
+		conf, _ := reader.ReadString('\n')
+		conf = strings.ToLower(strings.TrimSpace(conf))
+		if conf == "y" || conf == "yes" {
+			return true
+		} else if conf == "n" || conf == "no" {
+			return false
+		}
+	}
+}
+
+func extractService(sv, origData string) string {
+	svReg := regexp.MustCompilePOSIX(".*" + sv + ":")
+	found := svReg.FindString(origData)
+	whitespace := strings.Split(found, sv+":")[0]
+
+	services := regexp.MustCompilePOSIX("^"+whitespace+"[a-zA-Z-]*:( *|\t*)?").FindAllString(origData, -1)
+
+	nxtService := ""
+	if len(services) > 1 {
+		for key, val := range services {
+			if strings.Contains(val, whitespace+sv+":") {
+				if key+1 < len(services) {
+					nxtService = services[key+1]
+				}
+				break
+			}
+		}
+	}
+
+	allReg := regexp.MustCompile(whitespace + sv + ":\\s([\\w\\s\\W]*)" + nxtService)
+	found = allReg.FindString(origData)
+
+	replReg := regexp.MustCompile("(" + whitespace + sv + ":\\s|" + nxtService + ")")
+	return replReg.ReplaceAllString(found, "")
 }

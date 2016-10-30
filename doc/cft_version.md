@@ -1,14 +1,14 @@
-## cft switch
+## cft version
 
-Switches comments on image and build commands
+Prints version
 
 ### Synopsis
 
 
-If for a given service, build commands are commented out, these comments will be removed while image will be commented out and vice versa
+Prints version
 
 ```
-cft switch <service name> [<service name> <service name> ...]
+cft version
 ```
 
 ### Options inherited from parent commands
