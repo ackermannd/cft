@@ -71,7 +71,7 @@ var gitCoCmd = &cobra.Command{
 			args = strings.Split(string(tmp), "\n")
 			args = args[0 : len(args)-1]
 		}
-		fmt.Println(args)
+
 		cfd, _ := ioutil.ReadAll(cf)
 		origData := string(cfd)
 		clifmt.Settings.Intendation = " "
@@ -81,23 +81,15 @@ var gitCoCmd = &cobra.Command{
 			checkReg := regexp.MustCompile("build:(.*)")
 			folder := strings.TrimSpace(checkReg.ReplaceAllString(checkReg.FindString(service), "$1"))
 
-			var stderr bytes.Buffer
-
-			fmt.Println("Stashing changes in " + folder)
-			cmd := exec.Command("git", "stash")
-			cmd.Dir = folder
-			cmd.Stderr = &stderr
-			_, err := cmd.Output()
-			if err != nil {
-				return errors.New(err.Error() + ": " + stderr.String())
+			if _, err := os.Stat(folder); err != nil && os.IsNotExist(err) {
+				fmt.Println("folder does not exists: " + folder)
+				continue
 			}
 
-			stderr.Reset()
+			fmt.Println("Working in  " + folder)
+
 			clifmt.Println("Checking if remote origin exists")
-			cmd = exec.Command("git", "remote", "show", "origin")
-			cmd.Dir = folder
-			cmd.Stderr = &stderr
-			_, err = cmd.Output()
+			_, stderr, err := execCmd(folder, "git", "remote", "show", "origin")
 			if err != nil && err.Error() != "exit status 128" {
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
@@ -107,14 +99,14 @@ var gitCoCmd = &cobra.Command{
 					continue
 				}
 				clifmt.Println("No remote origin available, creating local branch")
-				cmd = exec.Command("git", "checkout", "-B", branch)
-				var stdout bytes.Buffer
-				stderr.Reset()
-				cmd.Dir = folder
-				cmd.Stderr = &stderr
-				cmd.Stdout = &stdout
+				clifmt.Println(fmt.Sprintf("Stashing changes in %s", folder))
+				_, stderr, err := execCmd(folder, "git", "stash")
+				if err != nil {
+					return errors.New(err.Error() + ": " + stderr.String())
+				}
 
-				err = cmd.Run()
+				stdout, stderr, err := execCmd(folder, "git", "checkout", "-B", branch)
+
 				if err != nil {
 					return errors.New(err.Error() + ": " + stderr.String())
 				}
@@ -128,21 +120,13 @@ var gitCoCmd = &cobra.Command{
 				continue
 			}
 
-			stderr.Reset()
 			clifmt.Println("Fetching remote")
-			cmd = exec.Command("git", "fetch", "--all")
-			cmd.Dir = folder
-			cmd.Stderr = &stderr
-			_, err = cmd.Output()
+			stdout, stderr, err := execCmd(folder, "git", "fetch", "--all")
 			if err != nil {
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
-			stderr.Reset()
 			clifmt.Println("Checking if branch exists in remote")
-			cmd = exec.Command("git", "ls-remote", "--heads", "--exit-code", "origin", branch)
-			cmd.Dir = folder
-			cmd.Stderr = &stderr
-			_, err = cmd.Output()
+			stdout, stderr, err = execCmd(folder, "git", "ls-remote", "--heads", "--exit-code", "origin", branch)
 			if err != nil {
 				if err.Error() != "exit status 2" {
 					return errors.New(err.Error() + ": " + stderr.String())
@@ -152,35 +136,33 @@ var gitCoCmd = &cobra.Command{
 					continue
 				}
 				clifmt.Println("Branch not available on remote, switchting to local branch")
-				cmd = exec.Command("git", "checkout", "-B", branch, "develop")
-				var stdout bytes.Buffer
-				stderr.Reset()
-				cmd.Dir = folder
-				cmd.Stderr = &stderr
-				cmd.Stdout = &stdout
+				clifmt.Println(fmt.Sprintf("Stashing changes in %s", folder))
+				_, stderr, err = execCmd(folder, "git", "stash")
+				if err != nil {
+					return errors.New(err.Error() + ": " + stderr.String())
+				}
 
-				err = cmd.Run()
+				stdout, stderr, err = execCmd(folder, "git", "checkout", "-B", branch, "develop")
 				if err != nil {
 					return errors.New(err.Error() + ": " + stderr.String())
 				}
 				if stdout.String() != "" {
 					clifmt.Println(strings.Replace(stdout.String(), "\n", "\n    ", -1))
 				}
-
 				if stderr.String() != "" {
 					clifmt.Println(strings.Replace(stderr.String(), "\n", "\n    ", -1))
 				}
 				continue
 			}
 			clifmt.Println("Checking out branch origin/" + branch)
-			cmd = exec.Command("git", "checkout", "-B", branch, "--track", "origin/"+branch)
-			var stdout bytes.Buffer
-			stderr.Reset()
-			cmd.Dir = folder
-			cmd.Stderr = &stderr
-			cmd.Stdout = &stdout
+			clifmt.Println(fmt.Sprintf("Stashing changes in %s", folder))
+			_, stderr, err = execCmd(folder, "git", "stash")
+			if err != nil {
+				return errors.New(err.Error() + ": " + stderr.String())
+			}
 
-			err = cmd.Run()
+			stdout, stderr, err = execCmd(folder, "git", "checkout", "-B", branch, "--track", fmt.Sprintf("origin/%s", branch))
+
 			if err != nil {
 				return errors.New(err.Error() + ": " + stderr.String())
 			}
@@ -194,6 +176,20 @@ var gitCoCmd = &cobra.Command{
 		}
 		return nil
 	},
+}
+
+func execCmd(folder string, name string, args ...string) (bytes.Buffer, bytes.Buffer, error) {
+	var stderr bytes.Buffer
+	var stdout bytes.Buffer
+	cmd := exec.Command(name, args...)
+	cmd.Dir = folder
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		return stdout, stderr, err
+	}
+	return stdout, stderr, nil
 }
 
 func init() {
